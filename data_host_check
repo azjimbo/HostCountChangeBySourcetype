@@ -21,7 +21,7 @@
       <html>
     <summary>
       <details>
-      This dashboard runs a count of hosts over time using |tstats.  It will present a sourcetype below that has had a reduction in the number of hosts repporting when the number of hosts in the sourcetype decreases by the percent specified above.<br />
+      This dashboard runs a count of hosts over time using |tstats.  It will present a sourcetype below that has had a reduction in the number of hosts reporting when the number of hosts in the sourcetype decreases by the percent specified above.<br />
       Click the row to get a list of all hosts in a drilldown, sorted with the earliest "last_seen" time at the top.
       </details>
     </summary>
