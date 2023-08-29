@@ -1,0 +1,121 @@
+<form>
+  <label>Host Count Change by Sourcetype</label>
+  <description>Find sourcetypes with a drop in the number of hosts reporting. Version 1.0</description>
+  <!--Courtesy of James Callahan, Professional Paranoid ; there might be something that already does this, but I couldn't find it, so I made one.  27 Aug 23-->
+  <fieldset submitButton="false">
+    <input type="time" token="timeBack">
+      <label>Time Span</label>
+      <default>
+        <earliest>-48h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input id="percenttext" type="text" token="percDrop" searchWhenChanged="true">
+      <label>Percent Drop More Than</label>
+      <default>25</default>
+      <initialValue>25</initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <html>
+    <summary>
+      <details>
+      This dashboard runs a count of hosts over time using |tstats.  It will present a sourcetype below that has had a reduction in the number of hosts repporting when the number of hosts in the sourcetype decreases by the percent specified above.<br />
+      Click the row to get a list of all hosts in a drilldown, sorted with the earliest "last_seen" time at the top.
+      </details>
+    </summary>
+    
+    <!-- css adjust -->
+    
+     <style>
+          #percenttext .splunk-textinput
+          {
+            width: 50px !important;
+          }
+          #percenttext .splunk-textinput input{
+            width: 50px !important;
+          }           
+        </style>
+    
+  </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <search>
+          <query>
+            | tstats count dc(host) as hosts WHERE index=* NOT index IN(cim_*, files,notable, sum_*, health_and_status, es_* audit_summary, risk, enpoint_summary,data_model_wrangler)
+            by  sourcetype index _time span=1h
+            | stats earliest(_time) as etime max(hosts) as maxhosts min(hosts) as minhosts ```max(count) as maxcount min(count) as mincount``` avg(hosts) as avghosts
+            earliest(hosts) as early_hosts latest(hosts) as late_hosts 
+            by sourcetype index
+            | eval qtime=now()
+            | convert ctime(etime),ctime(qtime)
+            | eval minmax_delta=(maxhosts-minhosts),earlylate_delta=(late_hosts-early_hosts), avghosts=round(avghosts,2), hosts_as_of=maxhosts+": "+etime, hosts_at_query_time=minhosts+": "+qtime
+
+            ```earlylate delta adjusts for fluctionations for late arriving data```
+            | eval percent_drop=round((minhosts/maxhosts)*100,2)
+            | eval percent_drop=(100-percent_drop)
+            | where earlylate_delta&lt;0 AND percent_drop&gt;$percDrop$
+            | eval percent_drop=percent_drop+" %"
+            | table index sourcetype hosts_as_of hosts_at_query_time percent_drop 
+            | sort - minmax_delta
+            | rename hosts_as_of AS "Number of hosts:  as of", hosts_at_query_time AS "Number of host: query time", percent_drop AS "Percent Drop"
+          </query>
+          <earliest>$timeBack.earliest$</earliest>
+          <!--<latest>-10m</latest>-->
+          <latest>$timeBack.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <drilldown>
+          <set token="indx">$row.index$</set>
+          <set token="srctype">$row.sourcetype$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row depends="$indx$">
+    <panel>
+      <title>Drilldown for index=$indx$ sourcetype=$srctype$</title>
+      <table>
+        <search>
+          <query>
+            | tstats count dc(host) as hosts WHERE index=$indx$ sourcetype=$srctype$ 
+            by  sourcetype index host _time span=1h
+            | stats sparkline earliest(_time) as early_time latest(_time) as last_seen count by index sourcetype host
+            | sort last_seen
+            | convert ctime(early_time), ctime(last_seen)
+          </query>
+          <earliest>$timeBack.earliest$</earliest>
+          <latest>$timeBack.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format field="sparkline" type="sparkline">
+          <option name="type">bar</option>
+          <option name="barColor">green</option>
+          <option name="colorMap">
+            <option name="1:">navy</option>
+          </option>
+        </format>
+      </table>
+    </panel>
+  </row>
+</form>
