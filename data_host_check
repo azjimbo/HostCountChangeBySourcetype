@@ -15,13 +15,24 @@
       <default>25</default>
       <initialValue>25</initialValue>
     </input>
+    <input id="mintext" type="text" token="minBack" searchWhenChanged="true" >
+      <label>Time Offset (No. of min)</label>
+      <default>10</default>
+      <prefix>-</prefix>
+      <suffix>m</suffix>
+      <initialValue>10</initialValue>
+    </input>
   </fieldset>
   <row>
     <panel>
       <html>
     <summary>
       <details>
-      This dashboard runs a count of hosts over time using |tstats.  It will present a sourcetype below that has had a reduction in the number of hosts reporting when the number of hosts in the sourcetype decreases by the percent specified above.<br />
+      This dashboard runs a count of hosts over time using |tstats.  It will present a sourcetype below that has had a reduction in the number of hosts repporting when the number of hosts in the sourcetype decreases by the percent specified above.<br/>
+      Inputs:
+      <ul>Time - normal Splunk time input</ul>
+      <ul>Percent - what percent decrease in reporting hosts are you interested in reporting on</ul>
+      <ul>Minutes Offset - This will provide for a delay in ingest for hosts that arrive late.</ul>
       Click the row to get a list of all hosts in a drilldown, sorted with the earliest "last_seen" time at the top.
       </details>
     </summary>
@@ -35,6 +46,13 @@
           }
           #percenttext .splunk-textinput input{
             width: 50px !important;
+          }       
+          #mintext .splunk-textinput
+          {
+            width: 50px !important;
+          }
+          #mintext .splunk-textinput input{
+            width: 50px !important;
           }           
         </style>
     
@@ -46,7 +64,8 @@
       <table>
         <search>
           <query>
-            | tstats count dc(host) as hosts WHERE index=* NOT index IN(cim_*, files,notable, sum_*, health_and_status, es_* audit_summary, risk, enpoint_summary,data_model_wrangler)
+            | tstats count dc(host) as hosts WHERE index=* 
+            NOT index IN(cim_*, files,notable, sum_*, health_and_status, es_* audit_summary, risk, enpoint_summary,data_model_wrangler ```indexes to exclude go here```)
             by  sourcetype index _time span=1h
             | stats earliest(_time) as etime max(hosts) as maxhosts min(hosts) as minhosts ```max(count) as maxcount min(count) as mincount``` avg(hosts) as avghosts
             earliest(hosts) as early_hosts latest(hosts) as late_hosts 
@@ -66,7 +85,8 @@
           </query>
           <earliest>$timeBack.earliest$</earliest>
           <!--<latest>-10m</latest>-->
-          <latest>$timeBack.latest$</latest>
+          <!--<latest>$timeBack.latest$</latest>-->
+          <latest>$minBack$</latest>
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">100</option>
@@ -95,9 +115,10 @@
             | stats sparkline earliest(_time) as early_time latest(_time) as last_seen count by index sourcetype host
             | sort last_seen
             | convert ctime(early_time), ctime(last_seen)
-          </query>
+            </query>
           <earliest>$timeBack.earliest$</earliest>
-          <latest>$timeBack.latest$</latest>
+          <!--<latest>$timeBack.latest$</latest>-->
+          <latest>$minBack$</latest>
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">100</option>
