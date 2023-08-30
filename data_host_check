@@ -67,7 +67,7 @@
             | tstats count dc(host) as hosts WHERE index=* 
             NOT index IN(cim_*, files,notable, sum_*, health_and_status, es_* audit_summary, risk, enpoint_summary,data_model_wrangler ```indexes to exclude go here```)
             by  sourcetype index _time span=1h
-            | stats earliest(_time) as etime max(hosts) as maxhosts min(hosts) as minhosts ```max(count) as maxcount min(count) as mincount``` avg(hosts) as avghosts
+            | stats earliest(_time) as etime max(hosts) as maxhosts min(hosts) as minhosts avg(hosts) as avghosts
             earliest(hosts) as early_hosts latest(hosts) as late_hosts 
             by sourcetype index
             | eval qtime=now()
