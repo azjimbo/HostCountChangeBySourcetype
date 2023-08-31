@@ -1,4 +1,4 @@
-<form version="1.3">
+<form>
   <label>Host Count Change by Sourcetype</label>
   <description>Find sourcetypes with a drop in the number of hosts reporting. Version 1.0</description>
   <!--Courtesy of James Callahan, Professional Paranoid ; there might be something that already does this, but I couldn't find it, so I made one.  27 Aug 23-->
@@ -26,6 +26,7 @@
         <!--       <earliest>-24h@h</earliest>
         <latest>now</latest>-->
       </search>
+      <delimiter> ,</delimiter>
     </input>
     <input type="multiselect" token="Notindx" searchWhenChanged="true">
       <label>Indexes to Exclude *</label>
@@ -35,6 +36,9 @@
         <!--      <query>| tstats count by index</query>-->
       </search>
       <delimiter> </delimiter>
+      <choice value="xx">(none)</choice>
+      <default>xx</default>
+      <initialValue>xx</initialValue>
     </input>
     <input id="percenttext" type="text" token="percDrop" searchWhenChanged="true">
       <label>Percent Drop More Than</label>
@@ -92,7 +96,7 @@
         <search>
           <query>
             | tstats count dc(host) as hosts WHERE index=$indx$ ```indexes to focus on could go here```
-            NOT index IN(cim_*, files,notable, sum_*, health_and_status, es_* audit_summary, risk, enpoint_summary,data_model_wrangler ```indexes to exclude go here```)
+            NOT index IN($Notindx$,cim_*, files,notable, sum_*, health_and_status, es_* audit_summary, risk, enpoint_summary,data_model_wrangler ```indexes to exclude go here```)
             by  sourcetype index _time span=1h
             | stats earliest(_time) as etime max(hosts) as maxhosts min(hosts) as minhosts avg(hosts) as avghosts
             earliest(hosts) as early_hosts latest(hosts) as late_hosts 
